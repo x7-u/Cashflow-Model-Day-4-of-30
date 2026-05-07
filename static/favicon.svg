@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <rect width="32" height="32" rx="2" fill="#F4EFE6"/>
+  <rect x="2" y="2" width="28" height="28" rx="1" fill="none" stroke="#1A1815" stroke-width="0.7"/>
+  <line x1="2" y1="6"  x2="30" y2="6"  stroke="#1A1815" stroke-width="0.4"/>
+  <line x1="2" y1="26" x2="30" y2="26" stroke="#1A1815" stroke-width="0.4"/>
+  <text x="16" y="22.5"
+        font-family="Didot, Bodoni 72, Times New Roman, serif"
+        font-style="italic" font-weight="700"
+        font-size="18" fill="#1A1815"
+        text-anchor="middle">L</text>
+  <circle cx="24" cy="22" r="1" fill="#8B2635"/>
+</svg>

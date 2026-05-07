@@ -1,0 +1,222 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>The Liquidity Ledger . Day 04</title>
+  <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+<!-- ============== Masthead (newspaper feel) ============== -->
+<header class="masthead">
+  <div class="masthead-row">
+    <div class="masthead-meta-left">
+      Vol. 04 &middot; Cash Flow Forecasting
+    </div>
+    <div class="masthead-meta-right">
+      <span class="status-dot {{ 'ok' if env_key_ok else 'off' }}" title="{{ 'API key loaded' if env_key_ok else 'No API key' }}"></span>
+      <span class="status-text">127.0.0.1:1004 &middot; loopback only</span>
+      <button id="theme-toggle" class="link-btn" title="Toggle theme">switch theme</button>
+    </div>
+  </div>
+  <h1 class="masthead-title">The Liquidity Ledger</h1>
+  <div class="masthead-rule"></div>
+  <div class="masthead-strap">
+    Thirteen weeks of receipts and payments. One controller's notebook. Adverse weeks flagged.
+    A scenario engine that takes plain English and answers in pounds.
+  </div>
+</header>
+
+<!-- ============== Lede + KPI panel ============== -->
+<section class="lede-row">
+  <div class="lede-copy">
+    <div class="kicker">Treasury &middot; Today's position</div>
+    <h2 class="lede-headline">Drop a forecast.<br>Get a controller's runway.</h2>
+    <p class="lede-deck">
+      A direct read on when cash falls below zero, when it falls below buffer, and which
+      counterparties or categories are doing the damage. Outputs a spreadsheet with
+      embedded charts, two CSVs, and an AI commentary you can lift straight into the board pack.
+    </p>
+  </div>
+  <aside class="kpi-frame">
+    <div class="kpi-frame-title">Today's Figures</div>
+    <dl class="kpi-list">
+      <div class="kpi-item"><dt>Opening</dt><dd id="hero-opening">.</dd></div>
+      <div class="kpi-item"><dt>Closing</dt><dd id="hero-closing">.</dd></div>
+      <div class="kpi-item"><dt>Min balance</dt><dd id="hero-min">.</dd></div>
+      <div class="kpi-item"><dt>Runway</dt><dd id="hero-runway">.</dd></div>
+      <div class="kpi-item"><dt>AI cost</dt><dd id="hero-cost">$0.0000</dd></div>
+    </dl>
+    <div class="kpi-foot" id="kpi-foot">No analysis yet. Submit a workbook below.</div>
+  </aside>
+</section>
+
+<!-- ============== The desk (controls) ============== -->
+<section class="desk">
+  <div class="desk-rule">. submit work .</div>
+  <div class="desk-grid">
+    <div class="desk-col">
+      <label class="field-label">01 . Authentication</label>
+      <div class="field-body">
+        {% if env_key_ok %}
+          <div class="auth-line ok">Key loaded from .env</div>
+        {% else %}
+          <div class="auth-line off">No key found in .env</div>
+        {% endif %}
+        <input type="password" id="api-key" placeholder="sk-... session-only override (optional)" autocomplete="off">
+      </div>
+    </div>
+    <div class="desk-col">
+      <label class="field-label">02 . Source</label>
+      <div class="field-body">
+        <div class="src-toggle">
+          <button id="src-upload" class="src-btn seg-on">Upload</button>
+          <span class="dot">&bull;</span>
+          <button id="src-bundled" class="src-btn">Pick a sample</button>
+        </div>
+        <p class="field-hint">XLSX up to {{ max_upload_mb }} MB. Wide W1..W13 layout, or long format with a server-side adapter.</p>
+      </div>
+    </div>
+    <div class="desk-col">
+      <label class="field-label">03 . Model</label>
+      <div class="field-body">
+        <select id="model-select">
+          <option value="">DeepSeek V4 (default)</option>
+          <option value="deepseek-chat">deepseek-chat</option>
+          <option value="deepseek-reasoner">deepseek-reasoner</option>
+        </select>
+        <label class="check-line"><input type="checkbox" id="skip-ai"> Run deterministic only, no AI</label>
+      </div>
+    </div>
+    <div class="desk-col desk-col-action">
+      <label class="field-label">04 . Submit</label>
+      <button id="run-btn" class="primary-btn">Analyse forecast</button>
+      <p class="field-hint">Or press Ctrl + Enter from anywhere on the page.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============== Inbox (drop / bundled) ============== -->
+<section class="inbox">
+
+  <article id="drop-card" class="inbox-card drop-zone">
+    <div class="inbox-glyph">&#9633;</div>
+    <h3 class="inbox-h">Submit your forecast</h3>
+    <p class="inbox-deck">Drag an .xlsx file anywhere on this card, or click to browse.</p>
+    <p class="inbox-shape">
+      Workbook layout: a <strong>metadata</strong> sheet (company, currency, opening_balance,
+      start_date, period_label) plus a <strong>forecast</strong> sheet with columns
+      <em>name &middot; type &middot; category &middot; W1..W13</em>. Optional <strong>actuals</strong>
+      sheet overrides per cell.
+    </p>
+    <input type="file" id="file-input" accept=".xlsx" hidden>
+  </article>
+
+  <article id="bundled-card" class="inbox-card bundled-zone hidden">
+    <div class="inbox-glyph">&sect;</div>
+    <h3 class="inbox-h">Bundled samples</h3>
+    <p class="inbox-deck">Three deterministic workbooks shipped with the repo. Click to load.</p>
+    <ol class="sample-ol">
+      {% for s in samples %}
+      <li>
+        <button class="sample" data-sample-id="{{ s.id }}">
+          <span class="sample-name">{{ s.filename }}</span>
+          <span class="sample-label">{{ s.label }}</span>
+        </button>
+      </li>
+      {% endfor %}
+    </ol>
+  </article>
+
+</section>
+
+<!-- ============== Cost log strip ============== -->
+<aside class="ledger-strip">
+  <span class="ls-item"><span class="ls-label">30-day spend</span> <span id="cl-30d">$0.0000</span></span>
+  <span class="ls-rule"></span>
+  <span class="ls-item"><span class="ls-label">all time</span> <span id="cl-total">$0.0000</span></span>
+  <span class="ls-rule"></span>
+  <span class="ls-item"><span class="ls-label">runs</span> <span id="cl-runs">0</span></span>
+  <span class="ls-grow"></span>
+  <button id="clear-log" class="link-btn">Clear log</button>
+</aside>
+
+<!-- ============== Results ============== -->
+<main id="results" class="results hidden">
+
+  <section class="results-banner">
+    <div class="results-banner-rule"></div>
+    <h2 class="results-banner-title">The Analysis</h2>
+    <div class="results-banner-meta" id="results-banner-meta">Today's figures, fully rendered below.</div>
+    <div class="results-banner-rule"></div>
+  </section>
+
+  <article class="article commentary-article hidden" id="commentary-card">
+    <div class="byline"><span id="commentary-byline-label">The controller writes</span> . <span id="commentary-byline-meta"></span></div>
+    <div id="commentary-body" class="article-body"></div>
+  </article>
+
+  <section class="article chart-article">
+    <div class="article-strap">. closing balance over thirteen weeks .</div>
+    <div id="balance-svg" class="chart-frame"></div>
+    <div class="legend-row" id="series-legend"></div>
+  </section>
+
+  <section class="two-col-row">
+    <article class="article">
+      <h4 class="article-h">Per week</h4>
+      <div id="weeks-table" class="ledger-table"></div>
+    </article>
+    <article class="article">
+      <h4 class="article-h">Type totals</h4>
+      <div id="totals-table" class="ledger-table"></div>
+    </article>
+  </section>
+
+  <section class="article">
+    <h4 class="article-h">Forecast detail</h4>
+    <div id="lines-table" class="ledger-table wide"></div>
+  </section>
+
+  <section class="article scenario-article">
+    <div class="article-strap">. scenario engine .</div>
+    <p class="scenario-prose">
+      Type a hypothetical in plain English. The model parses it into a typed shock, the
+      deterministic engine does the maths. Auditable. Reproducible.
+    </p>
+    <div class="scenario-row">
+      <input type="text" id="scenario-input" placeholder="What if revenue drops 20% for 3 weeks?" maxlength="500">
+      <button id="run-scenario" class="primary-btn small">Run scenario</button>
+    </div>
+    <div class="scenario-suggestions">
+      <span class="suggest-label">Try:</span>
+      <button class="chip" data-suggest="What if revenue drops 20% for 3 weeks?">revenue &minus;20% / 3 wk</button>
+      <button class="chip" data-suggest="Delay supplier payments by 14 days">delay payments 14d</button>
+      <button class="chip" data-suggest="One-off £30k receipt in week 8">+£30k W8</button>
+      <button class="chip" data-suggest="Defer VAT by 4 weeks">defer VAT 4w</button>
+    </div>
+  </section>
+
+  <section class="article downloads-article">
+    <h4 class="article-h">Take it with you</h4>
+    <div class="dl-row" id="dl-row"></div>
+  </section>
+
+</main>
+
+<footer class="colophon">
+  <div class="colophon-line"></div>
+  <p>
+    The Liquidity Ledger &middot; Vol. 04 of the 30-day finance project.
+    Runs on your machine. No data leaves the device except the pre-summarised
+    digest sent to DeepSeek V4 to draft the scenario commentary.
+  </p>
+</footer>
+
+<div id="toast" class="toast hidden"></div>
+
+<script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>
