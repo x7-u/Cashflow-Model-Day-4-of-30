@@ -131,9 +131,9 @@ pipeline crosses the network.
 - CSRF double-submit cookie + single-flight semaphore on the analyse
   route prevent CSRF and accidental double-submission.
 
-## Author
+## Project context
 
-Safwan Ahmed. Day 04 of the 30-day finance + AI sprint, 2026.
+Day 04 of a 30-day finance + AI sprint, 2026.
 
 ## License
 
